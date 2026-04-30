@@ -48,10 +48,12 @@ export interface TestResult {
   message: string;
 }
 
+export type Period = "D7" | "D30" | "D90";
+
 export const api = {
   tenants: () => get<Tenant[]>("/tenants"),
-  overview: (tid: string) => get<any>(`/tenants/${tid}/overview`),
-  agents: (tid: string) => get<any>(`/tenants/${tid}/agents`),
+  overview: (tid: string, period: Period = "D7") => get<any>(`/tenants/${tid}/overview?period=${period}`),
+  agents: (tid: string, period: Period = "D7") => get<any>(`/tenants/${tid}/agents?period=${period}`),
   usage: (tid: string) => get<any>(`/tenants/${tid}/usage`),
   health: (tid: string) => get<any>(`/tenants/${tid}/health`),
   security: (tid: string) => get<any>(`/tenants/${tid}/security`),
