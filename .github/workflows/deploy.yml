@@ -29,11 +29,6 @@ jobs:
       - name: Build React frontend
         run: cd frontend && npm ci && npm run build
 
-      - name: Copy build output to static/
-        run: |
-          rm -rf static
-          cp -r frontend/build static
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
