@@ -25,9 +25,10 @@ interface Props {
   unit?: string;
   trend: number;
   direction: "up" | "down";
+  onViewDetails?: () => void;
 }
 
-export default function KPICard({ label, value, unit, trend, direction }: Props) {
+export default function KPICard({ label, value, unit, trend, direction, onViewDetails }: Props) {
   const styles = useStyles();
   const trendColor = direction === "up" ? colors.green : colors.red;
   const arrow = direction === "up" ? "▲" : "▼";
@@ -44,7 +45,15 @@ export default function KPICard({ label, value, unit, trend, direction }: Props)
         <span>{Math.abs(trend)}%</span>
         <ArrowTrendingLines20Regular />
       </div>
-      <Link style={{ fontSize: "13px", marginTop: "8px", display: "inline-block" }}>View details →</Link>
+      <Link
+        style={{ fontSize: "13px", marginTop: "8px", display: "inline-block", cursor: "pointer" }}
+        onClick={(e) => {
+          e.preventDefault();
+          onViewDetails?.();
+        }}
+      >
+        View details →
+      </Link>
     </Card>
   );
 }

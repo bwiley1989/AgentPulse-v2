@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { makeStyles, Spinner, Text, Card } from "@fluentui/react-components";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import ChartPanel from "../components/Dashboard/ChartPanel";
+import DataSourceBadge from "../components/DataSourceBadge";
 import { api } from "../api";
 import { colors } from "../theme";
 
@@ -15,6 +16,11 @@ const useStyles = makeStyles({
     borderRadius: "8px",
     flex: "1 1 280px",
     minWidth: "280px",
+  },
+  headingRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   heading: { fontSize: "24px", fontWeight: 700, color: "#201F1E" },
   stat: { fontSize: "32px", fontWeight: 700, color: colors.blue, display: "block", marginTop: "8px" },
@@ -32,7 +38,10 @@ export default function Usage({ tenantId }: Props) {
 
   return (
     <div className={styles.page}>
-      <Text className={styles.heading}>Usage Analytics</Text>
+      <div className={styles.headingRow}>
+        <Text className={styles.heading}>Usage Analytics</Text>
+        <DataSourceBadge source={data.source} />
+      </div>
       <div className={styles.row}>
         <Card className={styles.card}>
           <Text className={styles.statLabel}>Total Queries (30d)</Text>
