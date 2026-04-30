@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   makeStyles,
   Spinner,
@@ -11,10 +11,22 @@ import {
   TableCell,
   Badge,
   Card,
+  Button,
+  Dialog,
+  DialogSurface,
+  DialogTitle,
+  DialogBody,
+  DialogContent,
 } from "@fluentui/react-components";
+import {
+  Dismiss24Regular,
+  ArrowSortDown20Regular,
+  ArrowSortUp20Regular,
+} from "@fluentui/react-icons";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { api } from "../api";
 import { colors } from "../theme";
+import DataSourceBadge from "../components/DataSourceBadge";
 
 const useStyles = makeStyles({
   page: { display: "flex", flexDirection: "column", gap: "20px" },
@@ -27,28 +39,100 @@ const useStyles = makeStyles({
     flex: "1 1 45%",
     minWidth: "340px",
   },
+  headingRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   heading: { fontSize: "24px", fontWeight: 700, color: "#201F1E" },
+  sortableHeader: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    ":hover": { color: colors.blue },
+  },
+  clickableRow: {
+    cursor: "pointer",
+    ":hover": { backgroundColor: "#F3F2F1" },
+  },
+  detailGrid: {
+    display: "grid",
+    gridTemplateColumns: "140px 1fr",
+    gap: "8px 16px",
+    fontSize: "14px",
+  },
+  detailLabel: { fontWeight: 600, color: colors.gray },
 });
 
 interface Props {
   tenantId: string;
 }
 
+type SortKey = "name" | "platform" | "status" | "invocations7d" | "successRate" | "avgLatencyMs";
+type SortDir = "asc" | "desc";
+
 export default function Agents({ tenantId }: Props) {
   const styles = useStyles();
   const [data, setData] = useState<any>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("invocations7d");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
 
   useEffect(() => {
     if (tenantId) api.agents(tenantId).then(setData);
   }, [tenantId]);
 
+  const sortedAgents = useMemo(() => {
+    if (!data?.agents) return [];
+    return [...data.agents].sort((a: any, b: any) => {
+      let aVal = a[sortKey];
+      let bVal = b[sortKey];
+      if (typeof aVal === "string") aVal = aVal.toLowerCase();
+      if (typeof bVal === "string") bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [data?.agents, sortKey, sortDir]);
+
   if (!data) return <Spinner label="Loading agents..." />;
 
-  const platformData = Object.entries(data.platformBreakdown).map(([name, count]) => ({ name, count }));
+  const platformData = Object.entries(data.platformBreakdown || {}).map(([name, count]) => ({ name, count }));
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return null;
+    return sortDir === "asc" ? (
+      <ArrowSortUp20Regular style={{ fontSize: "14px" }} />
+    ) : (
+      <ArrowSortDown20Regular style={{ fontSize: "14px" }} />
+    );
+  };
+
+  const columns: { key: SortKey; label: string }[] = [
+    { key: "name", label: "Name" },
+    { key: "platform", label: "Platform" },
+    { key: "status", label: "Status" },
+    { key: "invocations7d", label: "Invocations (7d)" },
+    { key: "successRate", label: "Success Rate" },
+    { key: "avgLatencyMs", label: "Avg Latency" },
+  ];
 
   return (
     <div className={styles.page}>
-      <Text className={styles.heading}>Agent Registry</Text>
+      <div className={styles.headingRow}>
+        <Text className={styles.heading}>Agent Registry</Text>
+        <DataSourceBadge source={data.source} />
+      </div>
 
       <div className={styles.row}>
         <Card className={styles.card}>
@@ -82,17 +166,23 @@ export default function Agents({ tenantId }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHeaderCell>Name</TableHeaderCell>
-              <TableHeaderCell>Platform</TableHeaderCell>
-              <TableHeaderCell>Status</TableHeaderCell>
-              <TableHeaderCell>Invocations (7d)</TableHeaderCell>
-              <TableHeaderCell>Success Rate</TableHeaderCell>
-              <TableHeaderCell>Avg Latency</TableHeaderCell>
+              {columns.map((col) => (
+                <TableHeaderCell key={col.key}>
+                  <div className={styles.sortableHeader} onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    <SortIcon col={col.key} />
+                  </div>
+                </TableHeaderCell>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.agents.map((a: any) => (
-              <TableRow key={a.id}>
+            {sortedAgents.map((a: any) => (
+              <TableRow
+                key={a.id}
+                className={styles.clickableRow}
+                onClick={() => setSelectedAgent(a)}
+              >
                 <TableCell>{a.name}</TableCell>
                 <TableCell>{a.platform}</TableCell>
                 <TableCell>
@@ -111,6 +201,56 @@ export default function Agents({ tenantId }: Props) {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Agent Detail Dialog */}
+      <Dialog open={!!selectedAgent} onOpenChange={(_, d) => { if (!d.open) setSelectedAgent(null); }}>
+        <DialogSurface style={{ maxWidth: "480px" }}>
+          <DialogTitle
+            action={
+              <Button appearance="subtle" icon={<Dismiss24Regular />} onClick={() => setSelectedAgent(null)} />
+            }
+          >
+            {selectedAgent?.name}
+          </DialogTitle>
+          <DialogBody>
+            <DialogContent>
+              {selectedAgent && (
+                <div className={styles.detailGrid}>
+                  <span className={styles.detailLabel}>Platform</span>
+                  <span>{selectedAgent.platform}</span>
+                  <span className={styles.detailLabel}>Status</span>
+                  <span>
+                    <Badge
+                      appearance="filled"
+                      color={selectedAgent.status === "active" ? "success" : selectedAgent.status === "inactive" ? "danger" : "warning"}
+                    >
+                      {selectedAgent.status}
+                    </Badge>
+                  </span>
+                  <span className={styles.detailLabel}>Invocations (7d)</span>
+                  <span>{selectedAgent.invocations7d.toLocaleString()}</span>
+                  <span className={styles.detailLabel}>Success Rate</span>
+                  <span>{(selectedAgent.successRate * 100).toFixed(1)}%</span>
+                  <span className={styles.detailLabel}>Avg Latency</span>
+                  <span>{selectedAgent.avgLatencyMs}ms</span>
+                  {selectedAgent.description && (
+                    <>
+                      <span className={styles.detailLabel}>Description</span>
+                      <span>{selectedAgent.description}</span>
+                    </>
+                  )}
+                  {selectedAgent.owner && (
+                    <>
+                      <span className={styles.detailLabel}>Owner</span>
+                      <span>{selectedAgent.owner}</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </DialogContent>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { makeStyles } from "@fluentui/react-components";
 import Sidebar from "./components/Layout/Sidebar";
@@ -33,11 +33,17 @@ function Shell() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
+  const loadTenants = useCallback(() => {
     api.tenants().then((t) => {
       setTenants(t);
-      if (t.length) setSelectedTenant(t[0].id);
+      if (t.length && !t.find((x) => x.id === selectedTenant)) {
+        setSelectedTenant(t[0].id);
+      }
     });
+  }, [selectedTenant]);
+
+  useEffect(() => {
+    loadTenants();
   }, []);
 
   const currentTab = location.pathname.split("/")[1] || "overview";
@@ -48,7 +54,12 @@ function Shell() {
       <div className={styles.main}>
         <div className={styles.topBar}>
           <TopNav current={currentTab} onTabChange={(t) => navigate(`/${t === "overview" ? "" : t}`)} />
-          <TenantSelector tenants={tenants} selected={selectedTenant} onChange={setSelectedTenant} />
+          <TenantSelector
+            tenants={tenants}
+            selected={selectedTenant}
+            onChange={setSelectedTenant}
+            onTenantsChanged={loadTenants}
+          />
         </div>
         <div className={styles.content}>
           <Routes>

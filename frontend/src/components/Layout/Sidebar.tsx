@@ -29,6 +29,7 @@ const useStyles = makeStyles({
     fontSize: "16px",
     color: colors.blueDark,
     borderBottom: `1px solid ${colors.grayLight}`,
+    cursor: "pointer",
   },
   section: { marginTop: "4px" },
   sectionHeader: {
@@ -63,23 +64,24 @@ const useStyles = makeStyles({
   },
 });
 
+// Map sidebar items to actual routes
 const sections = [
   {
     title: "Copilot",
     items: [
       { label: "Overview", path: "/", icon: <Board20Regular /> },
-      { label: "Connectors", path: "/connectors", icon: <PlugConnected20Regular /> },
-      { label: "Search", path: "/search", icon: <Search20Regular /> },
-      { label: "Settings", path: "/copilot-settings", icon: <Settings20Regular /> },
+      { label: "Usage", path: "/usage", icon: <Search20Regular /> },
+      { label: "Security", path: "/security", icon: <PlugConnected20Regular /> },
+      { label: "Settings", path: "/health", icon: <Settings20Regular /> },
     ],
   },
   {
     title: "Agents",
     items: [
       { label: "Overview", path: "/agents", icon: <Bot20Regular /> },
-      { label: "All agents", path: "/agents/all", icon: <Apps20Regular /> },
-      { label: "Tools", path: "/agents/tools", icon: <Wrench20Regular /> },
-      { label: "Settings", path: "/agents/settings", icon: <Settings20Regular /> },
+      { label: "All agents", path: "/agents", icon: <Apps20Regular /> },
+      { label: "Health", path: "/health", icon: <Wrench20Regular /> },
+      { label: "Settings", path: "/health", icon: <Settings20Regular /> },
     ],
   },
 ];
@@ -89,13 +91,24 @@ interface Props {
   activePath: string;
 }
 
+// Check if a sidebar item matches the current path
+function isActive(itemPath: string, activePath: string): boolean {
+  // Exact match for root
+  if (itemPath === "/" && activePath === "/") return true;
+  if (itemPath === "/") return false;
+  // Prefix match for non-root
+  return activePath === itemPath || activePath.startsWith(itemPath + "/");
+}
+
 export default function Sidebar({ onNavigate, activePath }: Props) {
   const styles = useStyles();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ Copilot: true, Agents: true });
 
   return (
     <nav className={styles.sidebar}>
-      <div className={styles.logo}>⚡ AgentPulse</div>
+      <div className={styles.logo} onClick={() => onNavigate("/")}>
+        ⚡ AgentPulse
+      </div>
       {sections.map((s) => (
         <div key={s.title} className={styles.section}>
           <div className={styles.sectionHeader} onClick={() => setExpanded((p) => ({ ...p, [s.title]: !p[s.title] }))}>
@@ -103,10 +116,10 @@ export default function Sidebar({ onNavigate, activePath }: Props) {
             {s.title}
           </div>
           {expanded[s.title] &&
-            s.items.map((item) => (
+            s.items.map((item, idx) => (
               <div
-                key={item.path}
-                className={`${styles.item} ${activePath === item.path ? styles.itemActive : ""}`}
+                key={`${item.path}-${idx}`}
+                className={`${styles.item} ${isActive(item.path, activePath) ? styles.itemActive : ""}`}
                 onClick={() => onNavigate(item.path)}
               >
                 {item.icon}

@@ -23,6 +23,7 @@ interface Props {
   count: number;
   severity: "info" | "warning" | "critical";
   cta: string;
+  onAction?: () => void;
 }
 
 const badgeColor: Record<string, "informative" | "warning" | "danger"> = {
@@ -31,7 +32,15 @@ const badgeColor: Record<string, "informative" | "warning" | "danger"> = {
   critical: "danger",
 };
 
-export default function ActionCard({ title, count, severity, cta }: Props) {
+// Map CTA text to navigation targets
+const ctaToRoute: Record<string, string> = {
+  "Assign now": "/agents",
+  "Review": "/security",
+  "Investigate": "/health",
+  "View all": "/usage",
+};
+
+export default function ActionCard({ title, count, severity, cta, onAction }: Props) {
   const styles = useStyles();
   return (
     <Card className={styles.card}>
@@ -41,9 +50,15 @@ export default function ActionCard({ title, count, severity, cta }: Props) {
           {count}
         </Badge>
       </div>
-      <Button appearance="outline" size="small">
+      <Button
+        appearance="outline"
+        size="small"
+        onClick={() => onAction?.()}
+      >
         {cta}
       </Button>
     </Card>
   );
 }
+
+export { ctaToRoute };

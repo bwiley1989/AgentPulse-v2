@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { makeStyles, Spinner, Text, Card, Badge } from "@fluentui/react-components";
 import { api } from "../api";
 import { colors } from "../theme";
+import DataSourceBadge from "../components/DataSourceBadge";
 
 const useStyles = makeStyles({
   page: { display: "flex", flexDirection: "column", gap: "20px" },
@@ -13,6 +14,11 @@ const useStyles = makeStyles({
     borderRadius: "8px",
     flex: "1 1 280px",
     minWidth: "280px",
+  },
+  headingRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   heading: { fontSize: "24px", fontWeight: 700, color: "#201F1E" },
   stat: { fontSize: "32px", fontWeight: 700, display: "block", marginTop: "8px" },
@@ -31,7 +37,10 @@ export default function Health({ tenantId }: Props) {
 
   return (
     <div className={styles.page}>
-      <Text className={styles.heading}>Service Health</Text>
+      <div className={styles.headingRow}>
+        <Text className={styles.heading}>Service Health</Text>
+        <DataSourceBadge source={data.source} />
+      </div>
       <div className={styles.row}>
         <Card className={styles.card}>
           <Text className={styles.statLabel}>Overall Status</Text>
