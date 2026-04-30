@@ -1448,9 +1448,18 @@ def api_status():
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_spa(path):
-    if path and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, "index.html")
+    # Serve actual static files (JS, CSS, images) if they exist
+    if path:
+        full_path = os.path.join(app.static_folder, path)
+        if os.path.isfile(full_path):
+            return send_from_directory(app.static_folder, path)
+    # Everything else gets index.html for React Router to handle
+    index_path = os.path.join(app.static_folder, "index.html")
+    if os.path.isfile(index_path):
+        return send_from_directory(app.static_folder, "index.html")
+    # Fallback if static folder is misconfigured
+    logger.error(f"SPA index.html not found at {index_path}, static_folder={app.static_folder}")
+    return "index.html not found", 404
 
 
 if __name__ == "__main__":
