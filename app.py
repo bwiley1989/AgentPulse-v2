@@ -1260,6 +1260,19 @@ def api_security(tid):
     return jsonify(_security_mock(tid))
 
 
+@app.route("/api/debug/security/<tid>")
+def api_debug_security(tid):
+    """Debug security endpoint — shows errors instead of falling back."""
+    import traceback
+    graph_client = _graph_client_for_tenant(tid)
+    if not graph_client:
+        return jsonify({"error": "No graph client", "creds_found": load_tenant_credentials(tid) is not None})
+    try:
+        return jsonify(_security_real(tid, graph_client))
+    except Exception as e:
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
+
+
 @app.route("/api/debug/status")
 def api_status():
     """Debug status endpoint with storage and tenant info."""
