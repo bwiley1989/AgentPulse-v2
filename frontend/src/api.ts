@@ -28,10 +28,12 @@ async function del<T>(path: string): Promise<T> {
 export interface Tenant {
   id: string;
   name: string;
-  domain: string;
-  seats: number;
+  domain?: string;
+  seats?: number;
   source?: "live" | "mock";
   connected?: boolean;
+  real?: boolean;
+  connected_at?: string;
 }
 
 export interface ConnectTenantPayload {

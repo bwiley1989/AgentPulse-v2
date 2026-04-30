@@ -29,21 +29,25 @@ export default function TenantSelector({ tenants, selected, onChange, onTenantsC
         style={{ minWidth: "260px" }}
       >
         {tenants.map((t) => (
-          <Option key={t.id} value={t.id} text={`${t.name} (${t.seats.toLocaleString()} seats)`}>
+          <Option key={t.id} value={t.id} text={t.name}>
             <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span
                 style={{
                   width: "8px",
                   height: "8px",
                   borderRadius: "50%",
-                  backgroundColor: t.source === "live" || t.connected ? colors.green : "#A19F9D",
+                  backgroundColor: t.source === "live" || t.connected || t.real ? colors.green : "#A19F9D",
                   flexShrink: 0,
                 }}
               />
               <span>{t.name}</span>
-              <span style={{ color: colors.gray, fontSize: "12px" }}>
-                ({t.seats.toLocaleString()} seats)
-              </span>
+              {t.seats ? (
+                <span style={{ color: colors.gray, fontSize: "12px" }}>
+                  ({t.seats.toLocaleString()} seats)
+                </span>
+              ) : t.real ? (
+                <span style={{ color: colors.green, fontSize: "12px" }}>Connected</span>
+              ) : null}
             </span>
           </Option>
         ))}

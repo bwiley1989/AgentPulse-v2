@@ -70,7 +70,7 @@ export default function Overview({ tenantId }: Props) {
 
       <Text style={{ fontSize: "16px", fontWeight: 600, color: "#323130" }}>Needs attention</Text>
       <div className={styles.row}>
-        {data.actions.map((a: any, i: number) => (
+        {(data.actions || []).map((a: any, i: number) => (
           <ActionCard
             key={i}
             title={a.title}
@@ -88,10 +88,10 @@ export default function Overview({ tenantId }: Props) {
         </Text>
       </div>
       <div className={styles.row}>
-        <ChartPanel title="Daily Active Users" data={data.charts.dailyActiveUsers} />
-        <ChartPanel title="Adoption Score" data={data.charts.adoptionOverTime} color={colors.green} />
-        <ChartPanel title="Queries per Day" data={data.charts.queriesPerDay} type="bar" />
-        <ChartPanel title="User Satisfaction" data={data.charts.satisfactionTrend} color={colors.orange} />
+        <ChartPanel title="Daily Active Users" data={data.charts?.dailyActiveUsers || []} />
+        <ChartPanel title="Adoption Score" data={data.charts?.adoptionOverTime || []} color={colors.green} />
+        <ChartPanel title="Queries per Day" data={data.charts?.queriesPerDay || []} type="bar" />
+        <ChartPanel title="User Satisfaction" data={data.charts?.satisfactionTrend || []} color={colors.orange} />
       </div>
     </div>
   );
