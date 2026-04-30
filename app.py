@@ -39,7 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agentpulse-v2")
 
-app = Flask(__name__, static_folder="static", static_url_path="")
+app = Flask(__name__, static_folder="static", static_url_path="/static-assets")
 
 # ---------------------------------------------------------------------------
 # In-memory fallback stores
