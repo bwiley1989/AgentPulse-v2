@@ -1029,8 +1029,17 @@ def api_tenants_disconnect(tid):
 
 @app.route("/api/tenants/<tid>/test", methods=["POST"])
 def api_tenant_test(tid):
-    """Test connection for a tenant."""
-    creds = load_tenant_credentials(tid)
+    """Test connection for a tenant. Accepts creds from request body OR loads stored creds."""
+    body = request.get_json(silent=True) or {}
+    # Use request body creds if provided (pre-save test), otherwise load stored
+    if body.get("client_id") and body.get("client_secret"):
+        creds = {
+            "tenant_id": body.get("tenant_id", tid),
+            "client_id": body["client_id"],
+            "client_secret": body["client_secret"],
+        }
+    else:
+        creds = load_tenant_credentials(tid)
     if not creds:
         return jsonify({"status": "error", "message": "No credentials stored for this tenant"}), 404
 
@@ -1059,20 +1068,23 @@ def api_tenant_test(tid):
                         "displayName": orgs[0].get("displayName", ""),
                         "verifiedDomains": [d.get("name", "") for d in orgs[0].get("verifiedDomains", [])],
                     }
+            org_name = org_info.get("displayName", "")
+            domains = ", ".join(org_info.get("verifiedDomains", []))
             return jsonify({
+                "success": True,
                 "status": "connected",
+                "message": f"Connected to {org_name} ({domains})" if org_name else "Connection successful!",
                 "tenant_id": tid,
-                "graph_token": True,
                 "organization": org_info,
-                "expires_in": result.get("expires_in", 0),
             })
         else:
             return jsonify({
+                "success": False,
                 "status": "error",
-                "message": result.get("error_description", result.get("error", "Unknown")),
+                "message": result.get("error_description", result.get("error", "Auth failed")),
             }), 401
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"success": False, "status": "error", "message": str(e)}), 500
 
 
 @app.route("/api/tenants/<tid>/overview")

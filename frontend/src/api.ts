@@ -14,7 +14,7 @@ async function post<T>(path: string, body?: any): Promise<T> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(err.error || `API error ${res.status}`);
+    throw new Error(err.message || err.error || `API error ${res.status}`);
   }
   return res.json();
 }
