@@ -732,11 +732,12 @@ def _security_mock(tid):
 # Real data fetchers for endpoints
 # ---------------------------------------------------------------------------
 
-def _overview_real(tid: str, graph_client: GraphClient) -> dict:
+def _overview_real(tid: str, graph_client: GraphClient, period: str = "D7") -> dict:
     """Fetch real overview data from Graph API."""
     result = {
         "tenantId": tid,
         "dataSource": "live",
+        "period": period,
         "kpis": [],
         "actions": [],
         "charts": {},
@@ -745,7 +746,7 @@ def _overview_real(tid: str, graph_client: GraphClient) -> dict:
     # 1. Active Copilot Users (beta report)
     active_users = 0
     try:
-        usage_rows = fetch_copilot_usage(graph_client, "D7")
+        usage_rows = fetch_copilot_usage(graph_client, period)
         if usage_rows and not usage_rows[0].get("error"):
             active_users = len(usage_rows)
     except Exception as e:
@@ -839,11 +840,12 @@ def _overview_real(tid: str, graph_client: GraphClient) -> dict:
     return result
 
 
-def _agents_real(tid: str, creds: dict) -> dict:
+def _agents_real(tid: str, creds: dict, days: int = 7) -> dict:
     """Fetch real agent data from Dataverse."""
     result = {
         "tenantId": tid,
         "dataSource": "live",
+        "period": f"D{days}",
         "agents": [],
         "trending": [],
         "platformBreakdown": {},
@@ -878,8 +880,24 @@ def _agents_real(tid: str, creds: dict) -> dict:
             agent["environmentUrl"] = api_url
             all_agents.append(agent)
 
+    # Fetch analytics for each agent (invocations, success rate)
+    for agent in all_agents:
+        bot_id = agent.get("botId", agent.get("id", ""))
+        env_url = agent.get("environmentUrl", "")
+        if bot_id and env_url:
+            try:
+                analytics = fetch_agent_analytics_dataverse(
+                    tenant_id, client_id, client_secret, env_url, bot_id, days=days
+                )
+                if not analytics.get("error"):
+                    agent["invocations7d"] = analytics.get("total_conversations", 0)
+                    agent["successRate"] = analytics.get("success_rate", 0)
+                    agent["avgLatencyMs"] = analytics.get("avg_duration_ms", 0)
+            except Exception:
+                pass
+
     result["agents"] = all_agents
-    result["trending"] = sorted(all_agents, key=lambda a: a.get("modifiedOn", ""), reverse=True)[:5]
+    result["trending"] = sorted(all_agents, key=lambda a: a.get("invocations7d", 0), reverse=True)[:5]
 
     platforms = {}
     for a in all_agents:
@@ -1090,10 +1108,11 @@ def api_tenant_test(tid):
 @app.route("/api/tenants/<tid>/overview")
 def api_overview(tid):
     """Overview data — real when credentials available, mock fallback."""
+    period = request.args.get("period", "D7")  # D7, D30, D90
     graph_client = _graph_client_for_tenant(tid)
     if graph_client:
         try:
-            return jsonify(_overview_real(tid, graph_client))
+            return jsonify(_overview_real(tid, graph_client, period=period))
         except Exception as e:
             logger.error(f"Real overview failed for {tid}, falling back to mock: {e}")
     return jsonify(_overview_mock(tid))
@@ -1102,10 +1121,12 @@ def api_overview(tid):
 @app.route("/api/tenants/<tid>/agents")
 def api_agents(tid):
     """Agent data — real when credentials available, mock fallback."""
+    period = request.args.get("period", "D7")  # D7, D30, D90
+    days = {"D7": 7, "D30": 30, "D90": 90}.get(period, 7)
     creds = load_tenant_credentials(tid)
     if creds:
         try:
-            return jsonify(_agents_real(tid, creds))
+            return jsonify(_agents_real(tid, creds, days=days))
         except Exception as e:
             logger.error(f"Real agents failed for {tid}, falling back to mock: {e}")
     return jsonify(_agents_mock(tid))

@@ -24,7 +24,7 @@ import {
   ArrowSortUp20Regular,
 } from "@fluentui/react-icons";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { api } from "../api";
+import { api, Period } from "../api";
 import { colors } from "../theme";
 import DataSourceBadge from "../components/DataSourceBadge";
 
@@ -75,13 +75,17 @@ type SortDir = "asc" | "desc";
 export default function Agents({ tenantId }: Props) {
   const styles = useStyles();
   const [data, setData] = useState<any>(null);
+  const [period, setPeriod] = useState<Period>("D7");
   const [sortKey, setSortKey] = useState<SortKey>("invocations7d");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
 
   useEffect(() => {
-    if (tenantId) api.agents(tenantId).then(setData);
-  }, [tenantId]);
+    if (tenantId) {
+      setData(null);
+      api.agents(tenantId, period).then(setData);
+    }
+  }, [tenantId, period]);
 
   const sortedAgents = useMemo(() => {
     if (!data?.agents) return [];
@@ -131,7 +135,30 @@ export default function Agents({ tenantId }: Props) {
     <div className={styles.page}>
       <div className={styles.headingRow}>
         <Text className={styles.heading}>Agent Registry</Text>
-        <DataSourceBadge source={data.source} />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", gap: "4px", background: "#F3F2F1", borderRadius: "6px", padding: "2px" }}>
+            {(["D7", "D30", "D90"] as Period[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                style={{
+                  padding: "4px 12px",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: period === p ? 600 : 400,
+                  background: period === p ? "#fff" : "transparent",
+                  boxShadow: period === p ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                  color: period === p ? colors.blue : colors.gray,
+                }}
+              >
+                {p === "D7" ? "7 days" : p === "D30" ? "30 days" : "90 days"}
+              </button>
+            ))}
+          </div>
+          <DataSourceBadge source={data.dataSource || data.source} />
+        </div>
       </div>
 
       <div className={styles.row}>
