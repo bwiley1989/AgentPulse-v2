@@ -1115,9 +1115,9 @@ def _agents_real(tid: str, creds: dict, days: int = 7) -> dict:
                     tenant_id, client_id, client_secret, env_url, bot_id, days=days
                 )
                 if not analytics.get("error"):
-                    agent["invocations7d"] = analytics.get("total_conversations", 0)
-                    agent["successRate"] = analytics.get("success_rate", 0)
-                    agent["avgLatencyMs"] = analytics.get("avg_duration_ms", 0)
+                    agent["invocations7d"] = analytics.get("total_sessions", 0)
+                    agent["successRate"] = analytics.get("engagement_rate", 0)
+                    agent["avgLatencyMs"] = analytics.get("avg_daily_sessions", 0)
             except Exception:
                 pass
 
